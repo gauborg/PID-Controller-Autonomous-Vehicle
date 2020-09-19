@@ -93,6 +93,94 @@ that's just a guess.
 One last note here: regardless of the IDE used, every submitted project must
 still be compilable with cmake and make./
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+---
 
+## Implementation
+
+A **proportional–integral–derivative controller** (PID controller or three-term controller) is a control loop mechanism employing feedback that is widely used in industrial control systems and a variety of other applications requiring continuously modulated control. A PID controller continuously calculates an *error value e(t)* as the difference between a desired setpoint (SP) and a measured process variable (PV) and applies a correction based on proportional, integral, and derivative terms (denoted P, I, and D respectively), hence the name. Here is a image that shows the effect of different controllers on the cross track error value.
+
+![image](./images/PID_controller.png)
+
+
+Here is a [Wikipedia](https://en.wikipedia.org/wiki/PID_controller) article for more information on the PID Controller.
+
+In this project, we use the PID controller to steer the car as it moves around the track so that it stays in the center of the road. The PID controller is mainly implemented in the PID.cpp file. There are three *Init()*, *UpdateError()*, *TotalError()* functions defined within the 
+
+1. We use the *Init()* function within class PID for initializing the values of Kp, Ki and Kd, the coefficients for the proportional, integral and differential terms.
+
+2. The *UpdateError()* function is used to calculate and update the *cross track error* value on every iteration. This function accepts the calcualted cte value and updates the proportional, differential and integral error terms. Here is the code for the *UpdateError()* function:
+
+```C++
+void PID::UpdateError(double cte)
+{
+  // Update PID errors based on cte.
+  d_error = cte-p_error;
+  p_error = cte;
+  i_error += cte;
+
+  iter++;
+}
+```
+
+3. The *TotalError()* function combines the individual terms to calculate the total error.
+
+```C++
+double PID::TotalError()
+{
+  // Calculate and return the total error
+  double error = (-Kp * p_error) - (Kd * d_error) - (Ki * i_error);
+  return error;
+}
+```
+---
+## Tuning the parameters
+
+Setting up the correct hyperparameters for the proportional, differential and integral coefficients is very important for effectively controlling the trajectory (steering) of the vehicle.
+
+The way this can be achieved is through the use of algorithms like Twiddle, Stochastic Gradient Descent (SGD) or by manual tuning. Changing the values of different coefficients have different effects on the vehicle steering behavior.
+
+We start by setting all the hyperparameters to 0.0. With all the parameters set to 0, the vehicle keeps moving in a straight line and no steering is applied thereby continuosly increasing the cross track error.
+
+### Proportional -
+
+This parameter sets the control input. Since, this factor is proportional to the CTE, setting a high value will result in higher control inputs and will cause the vehicle to behave aggresively on every turn. if the error is large and positive, the control output will be proportionately large and positive, taking into account the gain factor "Kp".
+
+We will start by increasing the proportional coefficient slowly. I increased the proportional coefficient slowly by about 0.2 (used a fine tuning of 0.05). I increased the ***Kp*** value till I got a steady oscillating vehicle (A vehicle which oscillates but does not go off the track.)
+
+### Differential -
+
+Then, I started increasing the d value. I found that increasing the ***Kd*** value takes care of the oscillations. I started increasing the value in the steps of 0.1 and found the oscillations to stabilize around a value of 0.75 for a throttle value of 0.3. The PID controller seems to be working perfectly at a value of 0.9-1.0 for ***Kd***.
+
+### Integral -
+
+The integral component collects the error over time and gives the accumulated offset that should have been corrected previously. Addition of this term reduces the steady state error. This gain compensates the bias in the system, thereby increasing the control signal.
+
+
+These are the steps I took to come up with the parameters -
+
+1. Setting all the parameters to zero. This way, the car will keep going straight without making any turns.
+
+2. Increase the proportionality constant *Kp* in the steps of 0.1 till the oscillations are steady.
+
+3. Increase the integral constant *Ki* in small steps to reduce the steady state error. We will set very small values for this gain.
+
+4. Increase the differential constant *Kd* in the steps of 0.1 until the oscillations reduce.
+
+
+These are the final values I came up with for the PID controller for different throttle setting values of 0.3, 0.4 and 0.5. (For higher throttle values, I was able to reach higher speeds.) -
+
+| Gain Constant | Kp | Ki | Kd | Max Speed (mph)| Recorded Video link |
+| :---: | :---: | :---: | :---: | :---: | :--- |
+| 0.3 | 0.1 | 0.001 | 1.0 | 34.3 | [PID_control_0.3.mp4](./PID_Control_0.3.mp4)
+| 0.4 | 0.135 | 0.001 | 1.5 | 44.2 | [PID_Control_0.4_throttle.mp4](./PID_Control_0.4.mp4)
+| 0.5 | 0.135 | 0.0015 | 1.8 | 48.2 | [PID_Control_0.5_throttle.mp4](./PID_Control_0.5.mp4)
+
+
+With these settings, I was able to reach a maximum speed of 48.2 mph. With a throttle setting of 0.5, the vehicle still oscillates a little but mostly stays on the track.
+
+---
+
+## Future Scope for Improvements
+
+* As part of of further developments, we can also create a separate PID controller for throttle and speed.
+* We can also implement algorithms such as SGD (Stochastic Gradient Descent) or Twiddle to tune the parameters.
