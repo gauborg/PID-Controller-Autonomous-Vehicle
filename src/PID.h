@@ -1,5 +1,7 @@
 #ifndef PID_H
 #define PID_H
+#include <iostream>
+#include <vector>
 
 class PID {
  public:
@@ -23,28 +25,39 @@ class PID {
    * Update the PID error variables given cross track error.
    * @param cte The current cross track error
    */
+
   void UpdateError(double cte);
 
   /**
    * Calculate the total PID error.
    * @output The total PID error
    */
-  double TotalError();
 
- private:
-  /**
-   * PID Errors
-   */
+  // define Twiddle algorithm here
+  void Twiddle(double tol=0.2);
+
+
+  double TotalError();
+  
+  // private:
+  // PID Errors
+  
+  int iter;
+
   double p_error;
   double i_error;
   double d_error;
 
-  /**
-   * PID Coefficients
-   */ 
+  // parameter to store last CTE
+  std::vector<double> p;
+  std::vector<double> dp;
+
+  // PID Coefficients 
+  
   double Kp;
   double Ki;
   double Kd;
+
 };
 
 #endif  // PID_H
